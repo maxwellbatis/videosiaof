@@ -2,3 +2,5 @@
 venv/
 __pycache__/
 .DS_Store
+setup_env.bat
+setup_env.ps1
