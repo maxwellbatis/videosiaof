@@ -4,7 +4,7 @@ import json
 
 if len(os.environ.get("GROQ_API_KEY")) > 30:
     from groq import Groq
-    model = "mixtral-8x7b-32768"
+    model = "llama3-70b-8192"
     client = Groq(
         api_key=os.environ.get("GROQ_API_KEY"),
         )
@@ -51,11 +51,22 @@ def generate_script(topic):
         )
     content = response.choices[0].message.content
     try:
+        # Limpar caracteres de controle e quebras de linha
+        content = content.replace('\n', ' ').replace('\r', ' ')
         script = json.loads(content)["script"]
     except Exception as e:
+        # Tentar extrair JSON da resposta
         json_start_index = content.find('{')
         json_end_index = content.rfind('}')
-        print(content)
-        content = content[json_start_index:json_end_index+1]
-        script = json.loads(content)["script"]
+        if json_start_index != -1 and json_end_index != -1:
+            content = content[json_start_index:json_end_index+1]
+            content = content.replace('\n', ' ').replace('\r', ' ')
+            try:
+                script = json.loads(content)["script"]
+            except:
+                # Se ainda falhar, retornar o conteúdo limpo
+                script = content.replace('{"script": "', '').replace('"}', '')
+        else:
+            # Se não encontrar JSON, retornar o conteúdo como está
+            script = content
     return script
