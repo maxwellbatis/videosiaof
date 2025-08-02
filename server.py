@@ -105,23 +105,7 @@ async def generate_video_async(job_id, topic, template_id=None, use_db=False):
         if not os.environ.get("PEXELS_KEY"):
             raise Exception("PEXELS_KEY não configurada. Configure a variável de ambiente.")
         
-        # 1. Aplicar template se especificado
-        if template_id:
-            print(f"🎨 APLICANDO TEMPLATE: {template_id}")
-            template = template_manager.get_template(template_id)
-            if template:
-                # Aplicar configurações do template
-                template_render_engine.apply_template_to_video(
-                    video_path="",  # Será definido depois
-                    template_id=template_id,
-                    script="",  # Será definido depois
-                    audio_path=""  # Será definido depois
-                )
-                print(f"✅ Template {template_id} aplicado com sucesso!")
-            else:
-                print(f"⚠️ Template {template_id} não encontrado, usando geração padrão")
-        
-        # 2. Gerar script (com ou sem template)
+        # 1. Gerar script (com ou sem template)
         update_job_progress(job_id, 20)
         if template_id:
             print(f"🎨 Usando template: {template_id}")
@@ -145,18 +129,34 @@ async def generate_video_async(job_id, topic, template_id=None, use_db=False):
         await generate_audio(response, audio_filename)
         print(f"Áudio gerado: {audio_filename}")
         
+        # 3.5. Aplicar template se especificado
+        if template_id:
+            print(f"🎨 APLICANDO TEMPLATE: {template_id}")
+            template = template_manager.get_template(template_id)
+            if template:
+                # Aplicar configurações do template
+                template_render_engine.apply_template_to_video(
+                    video_path="",  # Será definido depois
+                    template_id=template_id,
+                    script=response,  # Script já gerado
+                    audio_path=audio_filename  # Áudio já gerado
+                )
+                print(f"✅ Template {template_id} aplicado com sucesso!")
+            else:
+                print(f"⚠️ Template {template_id} não encontrado, usando geração padrão")
+        
         # 4. Gerar legendas
-        update_job_progress(job_id, 60)
+        update_job_progress(job_id, 50)
         timed_captions = generate_timed_captions(audio_filename)
         print(f"Legendas geradas: {len(timed_captions)} segmentos")
         
         # 5. Gerar termos de busca
-        update_job_progress(job_id, 70)
+        update_job_progress(job_id, 60)
         search_terms = getVideoSearchQueriesTimed(response, timed_captions)
         print(f"Termos de busca gerados: {len(search_terms) if search_terms else 0}")
         
         # 6. Buscar vídeos de fundo
-        update_job_progress(job_id, 80)
+        update_job_progress(job_id, 70)
         background_video_urls = None
         if search_terms:
             background_video_urls = generate_video_url(search_terms, "pexel")
@@ -167,7 +167,7 @@ async def generate_video_async(job_id, topic, template_id=None, use_db=False):
                 print("Nenhum vídeo de fundo encontrado")
         
         # 7. Renderizar vídeo final (com template aplicado)
-        update_job_progress(job_id, 90)
+        update_job_progress(job_id, 80)
         if background_video_urls:
             print("🎬 Iniciando renderização com template...")
             output_video = get_output_media(audio_filename, timed_captions, background_video_urls, "pexel")

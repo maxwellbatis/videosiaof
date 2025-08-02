@@ -99,14 +99,65 @@ def apply_template_effects_to_audio(audio_clip, template_configs):
             assets = section_data.get('assets', {})
             audio_effects.extend(assets.get('audio_effects', []))
         
-        # Aplicar efeitos sonoros (simplificado - apenas volume)
         effects_volume = audio_config.get('effects_volume', 0.5)
         if audio_effects:
             print(f"🎵 Aplicando {len(audio_effects)} efeitos sonoros do template")
-            # Aqui você pode adicionar lógica para aplicar os efeitos sonoros
-            # Por enquanto, apenas aplicamos um volume de efeitos
+            # Aplicar efeitos sonoros reais
+            for effect_path in audio_effects:
+                if os.path.exists(effect_path):
+                    try:
+                        effect_clip = AudioFileClip(effect_path)
+                        # Aplicar efeito com volume reduzido
+                        effect_clip = effect_clip.volumex(effects_volume)
+                        # Combinar com áudio principal
+                        audio_clip = CompositeAudioClip([audio_clip, effect_clip])
+                        print(f"   ✅ Efeito aplicado: {effect_path}")
+                    except Exception as e:
+                        print(f"   ❌ Erro ao aplicar efeito {effect_path}: {e}")
+                else:
+                    print(f"   ❌ Efeito não encontrado: {effect_path}")
     
     return audio_clip
+
+def apply_strategic_pauses(audio_clip, pauses_config):
+    """Aplica pausas estratégicas ao áudio"""
+    print(f"⏱️ Aplicando {len(pauses_config)} pausas estratégicas")
+    
+    # Ordenar pausas por posição
+    sorted_pauses = sorted(pauses_config, key=lambda x: x.get('position', 0))
+    
+    # Criar clips de áudio com pausas
+    audio_clips = []
+    current_time = 0
+    
+    for pause in sorted_pauses:
+        pause_position = pause.get('position', 0)
+        pause_duration = pause.get('duration', 0)
+        
+        # Adicionar áudio até a pausa
+        if pause_position > current_time:
+            segment = audio_clip.subclip(current_time, pause_position)
+            audio_clips.append(segment)
+        
+        # Adicionar pausa (silêncio)
+        if pause_duration > 0:
+            from moviepy.audio.AudioClip import AudioClip
+            silence = AudioClip(lambda t: 0, duration=pause_duration)
+            audio_clips.append(silence)
+            print(f"   ⏸️ Pausa em {pause_position:.1f}s por {pause_duration:.1f}s: {pause.get('description', '')}")
+        
+        current_time = pause_position + pause_duration
+    
+    # Adicionar o resto do áudio
+    if current_time < audio_clip.duration:
+        final_segment = audio_clip.subclip(current_time, audio_clip.duration)
+        audio_clips.append(final_segment)
+    
+    # Combinar todos os clips
+    if audio_clips:
+        return CompositeAudioClip(audio_clips)
+    else:
+        return audio_clip
 
 def apply_template_effects_to_video(video_clip, template_configs):
     """Aplica efeitos visuais do template"""
@@ -123,13 +174,21 @@ def apply_template_effects_to_video(video_clip, template_configs):
     
     if video_effects:
         print(f"🎬 Aplicando {len(video_effects)} efeitos visuais do template")
-        # Aqui você pode adicionar lógica para aplicar os efeitos visuais
-        # Por enquanto, apenas logamos os efeitos disponíveis
-        for effect in video_effects:
-            if os.path.exists(effect):
-                print(f"   ✅ Efeito disponível: {effect}")
+        # Aplicar efeitos visuais reais
+        for effect_path in video_effects:
+            if os.path.exists(effect_path):
+                try:
+                    # Carregar efeito visual
+                    effect_clip = VideoFileClip(effect_path)
+                    # Redimensionar para combinar com vídeo principal
+                    effect_clip = effect_clip.resize(video_clip.size)
+                    # Aplicar efeito como overlay
+                    video_clip = CompositeVideoClip([video_clip, effect_clip])
+                    print(f"   ✅ Efeito visual aplicado: {effect_path}")
+                except Exception as e:
+                    print(f"   ❌ Erro ao aplicar efeito visual {effect_path}: {e}")
             else:
-                print(f"   ❌ Efeito não encontrado: {effect}")
+                print(f"   ❌ Efeito visual não encontrado: {effect_path}")
     
     return video_clip
 
@@ -175,6 +234,11 @@ def get_output_media(audio_file_path, timed_captions, background_video_data, vid
     
     # Aplicar efeitos do template ao áudio
     audio_file_clip = apply_template_effects_to_audio(audio_file_clip, template_configs)
+    
+    # Aplicar pausas estratégicas se configuradas
+    if 'pauses' in template_configs and template_configs['pauses']:
+        audio_file_clip = apply_strategic_pauses(audio_file_clip, template_configs['pauses'])
+    
     audio_clips.append(audio_file_clip)
 
     # Obter configurações de texto do template ou usar padrão
