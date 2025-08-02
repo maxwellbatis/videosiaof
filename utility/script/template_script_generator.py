@@ -17,24 +17,32 @@ class TemplateScriptGenerator:
         self.script_templates = {
             'cinematic_religious': {
                 'intro_patterns': [
-                    "Você não vai acreditar no que já estava previsto a séculos.",
+                    "Você não vai acreditar no que já estava previsto há séculos.",
                     "Prepare-se para descobrir uma verdade chocante.",
-                    "O que você está prestes a ver vai mudar tudo."
+                    "O que você está prestes a ver vai mudar tudo.",
+                    "Uma profecia antiga está se cumprindo agora mesmo.",
+                    "O que a Bíblia previu está acontecendo diante dos nossos olhos."
                 ],
                 'development_patterns': [
                     "Em {topic} está escrito que",
                     "A {topic} revela que",
-                    "Segundo a {topic},"
+                    "Segundo a {topic},",
+                    "A profecia sobre {topic} diz que",
+                    "O que {topic} previu está acontecendo agora"
                 ],
                 'climax_patterns': [
                     "Agora pense comigo sobre isso.",
                     "Mas o que isso significa para nós?",
-                    "E se eu te disser que"
+                    "E se eu te disser que",
+                    "O mais assustador é que",
+                    "E o pior ainda está por vir."
                 ],
                 'conclusion_patterns': [
                     "Ou será que já estamos vivendo o início dessa profecia?",
                     "Será que você está preparado para essa verdade?",
-                    "O que você vai fazer com essa informação?"
+                    "O que você vai fazer com essa informação?",
+                    "Está na hora de acordar para a realidade.",
+                    "A escolha é sua: ignorar ou agir."
                 ]
             }
         }
@@ -50,8 +58,11 @@ class TemplateScriptGenerator:
         if not template:
             return {'error': f'Template {template_id} não encontrado'}
         
-        # Gerar roteiro usando padrões do template
-        script = self._generate_script_from_patterns(topic, template_id)
+        # Gerar roteiro usando IA se possível, senão usar padrões
+        script = self._generate_script_with_ai(topic, template_id)
+        if not script:
+            script = self._generate_script_from_patterns(topic, template_id)
+        
         if not script:
             return {'error': 'Não foi possível gerar o roteiro'}
         
@@ -79,6 +90,50 @@ class TemplateScriptGenerator:
         
         return final_result
     
+    def _generate_script_with_ai(self, topic: str, template_id: str) -> str:
+        """Gera roteiro usando IA (Groq/OpenAI)"""
+        try:
+            # Verificar se temos API key disponível
+            if not os.environ.get("GROQ_API_KEY") and not os.environ.get("OPENAI_KEY"):
+                print("⚠️ Nenhuma API key disponível, usando padrões")
+                return ""
+            
+            # Importar módulo de script generator
+            from utility.script.script_generator import generate_script
+            
+            # Gerar script base usando IA
+            base_script = generate_script(topic)
+            
+            # Adaptar para o template específico
+            if template_id == 'cinematic_religious':
+                adapted_script = self._adapt_for_religious_template(base_script, topic)
+                return adapted_script
+            
+            return base_script
+            
+        except Exception as e:
+            print(f"⚠️ Erro ao gerar script com IA: {e}")
+            return ""
+    
+    def _adapt_for_religious_template(self, base_script: str, topic: str) -> str:
+        """Adapta script para template religioso/cinematográfico"""
+        # Remover frases muito genéricas e adicionar tom dramático
+        dramatic_intro = "Você não vai acreditar no que já estava previsto há séculos."
+        
+        # Extrair pontos principais do script base
+        sentences = base_script.split('.')
+        main_points = [s.strip() for s in sentences if len(s.strip()) > 20][:3]
+        
+        # Criar script dramático
+        dramatic_script = f"{dramatic_intro} {topic} revela verdades chocantes que estão acontecendo agora mesmo. "
+        
+        if main_points:
+            dramatic_script += " ".join(main_points) + ". "
+        
+        dramatic_script += f"Mas o que isso significa para nós? E se eu te disser que o que {topic} previu está se cumprindo diante dos nossos olhos? Será que você está preparado para essa verdade? Ou será que já estamos vivendo o início dessa profecia?"
+        
+        return dramatic_script
+    
     def _generate_script_from_patterns(self, topic: str, template_id: str) -> str:
         """Gera roteiro usando padrões pré-definidos"""
         if template_id not in self.script_templates:
@@ -94,7 +149,7 @@ class TemplateScriptGenerator:
         climax = random.choice(patterns['climax_patterns'])
         conclusion = random.choice(patterns['conclusion_patterns'])
         
-        # Criar roteiro completo
+        # Criar roteiro completo mais dinâmico
         script_parts = [
             intro,
             f"E agora está acontecendo bem diante dos nossos olhos.",
@@ -109,25 +164,31 @@ class TemplateScriptGenerator:
     
     def generate_script_with_pauses(self, topic: str, template_id: str) -> Dict:
         """Gera roteiro com estratégia de pausas aplicada"""
+        print(f"🎬 GERANDO ROTEIRO COM PAUSAS: {template_id}")
+        print(f"📝 Tópico: {topic}")
+        print("-" * 50)
+        
         # Primeiro gerar o roteiro básico
         result = self.generate_script_for_template(topic, template_id)
         if 'error' in result:
             return result
         
         # Obter estratégia de pausas do template
-        pauses_strategy = self.template_manager.get_pauses_strategy(template_id)
-        if not pauses_strategy:
-            return result  # Retornar resultado sem pausas se não houver estratégia
+        template = self.template_manager.get_template(template_id)
+        pauses_strategy = template.get('pauses_strategy', {}) if template else {}
         
-        # Adicionar informações de pausas ao resultado
-        result['pauses_strategy'] = pauses_strategy
-        result['pauses_applied'] = True
-        
-        print(f"\n⏱️ ESTRATÉGIA DE PAUSAS APLICADA:")
-        for pause_type, pauses in pauses_strategy.items():
-            print(f"   • {pause_type}: {len(pauses)} pausas")
-            for pause in pauses:
-                print(f"     - {pause.get('position', 0):.1f}s ({pause.get('duration', 0):.1f}s): {pause.get('description', '')}")
+        if pauses_strategy:
+            # Adicionar informações de pausas ao resultado
+            result['pauses_strategy'] = pauses_strategy
+            result['pauses_applied'] = True
+            
+            print(f"\n⏱️ ESTRATÉGIA DE PAUSAS APLICADA:")
+            for pause_type, pauses in pauses_strategy.items():
+                print(f"   • {pause_type}: {len(pauses)} pausas")
+                for pause in pauses:
+                    print(f"     - {pause.get('position', 0):.1f}s ({pause.get('duration', 0):.1f}s): {pause.get('description', '')}")
+        else:
+            print("⚠️ Nenhuma estratégia de pausas encontrada para este template")
         
         return result
     
@@ -136,10 +197,35 @@ class TemplateScriptGenerator:
         print(f"🔍 VALIDANDO ASSETS DO TEMPLATE: {template_id}")
         print("-" * 40)
         
-        missing_assets = self.template_manager.validate_assets(template_id)
+        template = self.template_manager.get_template(template_id)
+        if not template:
+            return {'error': f'Template {template_id} não encontrado'}
         
-        if 'error' in missing_assets:
-            return missing_assets
+        missing_assets = {
+            'audio_effects': [],
+            'video_effects': [],
+            'background_music': []
+        }
+        
+        # Verificar assets em cada seção
+        sections = template.get('sections', {})
+        for section_name, section_data in sections.items():
+            assets = section_data.get('assets', {})
+            
+            # Verificar efeitos de áudio
+            for effect in assets.get('audio_effects', []):
+                if not os.path.exists(effect):
+                    missing_assets['audio_effects'].append(effect)
+            
+            # Verificar efeitos de vídeo
+            for effect in assets.get('video_effects', []):
+                if not os.path.exists(effect):
+                    missing_assets['video_effects'].append(effect)
+            
+            # Verificar música de fundo
+            bg_music = assets.get('background_music', '')
+            if bg_music and not os.path.exists(bg_music):
+                missing_assets['background_music'].append(bg_music)
         
         total_missing = sum(len(assets) for assets in missing_assets.values())
         
@@ -208,18 +294,11 @@ class TemplateScriptGenerator:
         if not suggestions:
             return {'error': 'Nenhum template apropriado encontrado para o tópico'}
         
-        print(f"🎨 TEMPLATES SUGERIDOS:")
-        for i, suggestion in enumerate(suggestions[:3], 1):
-            print(f"   {i}. {suggestion['name']} (Score: {suggestion['score']})")
-            print(f"      {suggestion['description']}")
-            for reason in suggestion['reasons']:
-                print(f"      • {reason}")
-        
         # Usar o template com maior score
         best_template = suggestions[0]
-        print(f"\n✅ Usando template: {best_template['name']}")
+        print(f"🎨 Template sugerido: {best_template['name']} (Score: {best_template['score']})")
         
-        # Gerar roteiro com o template escolhido
+        # Gerar roteiro com o template sugerido
         return self.generate_script_with_pauses(topic, best_template['template_id'])
 
 def main():
@@ -229,37 +308,37 @@ def main():
     
     generator = TemplateScriptGenerator()
     
-    # Testar validação de assets
-    print("\n🔍 VALIDANDO ASSETS:")
-    validation = generator.validate_template_assets("cinematic_religious")
-    if validation.get('success'):
-        print("✅ Template pronto para uso!")
-    else:
-        print("⚠️ Alguns assets estão faltando, mas o template pode ser usado")
+    # Testar geração de script
+    print("\n📝 TESTANDO GERAÇÃO DE SCRIPT:")
+    result = generator.generate_script_with_pauses("profecia bíblica do apocalipse", "cinematic_religious")
     
-    # Testar sugestões de templates
+    if 'error' not in result:
+        print(f"✅ Script gerado com sucesso!")
+        print(f"   • Template: {result['template_name']}")
+        print(f"   • Palavras: {len(result['script'].split())}")
+        print(f"   • Pausas aplicadas: {result.get('pauses_applied', False)}")
+        print(f"\n📄 Script:")
+        print(f"   {result['script'][:200]}...")
+    else:
+        print(f"❌ Erro: {result['error']}")
+    
+    # Testar validação de assets
+    print("\n🔍 TESTANDO VALIDAÇÃO DE ASSETS:")
+    validation = generator.validate_template_assets("cinematic_religious")
+    if 'error' not in validation:
+        print(f"   • Sucesso: {validation['success']}")
+        if not validation['success']:
+            print(f"   • Assets faltando: {sum(len(assets) for assets in validation['missing_assets'].values())}")
+    else:
+        print(f"   ❌ Erro: {validation['error']}")
+    
+    # Testar sugestões
     print("\n🎯 TESTANDO SUGESTÕES:")
     suggestions = generator.get_template_suggestions("profecia bíblica do apocalipse")
     for suggestion in suggestions:
         print(f"   • {suggestion['name']} (Score: {suggestion['score']})")
-    
-    # Testar geração com sugestões
-    print("\n📝 GERANDO ROTEIRO COM SUGESTÕES:")
-    result = generator.generate_with_suggestions("profecia bíblica do apocalipse")
-    
-    if 'error' in result:
-        print(f"❌ Erro: {result['error']}")
-    else:
-        print(f"✅ Roteiro gerado com sucesso!")
-        print(f"   • Template: {result['template_name']}")
-        print(f"   • Tópico: {result['topic']}")
-        print(f"   • Pausas aplicadas: {result.get('pauses_applied', False)}")
-        
-        # Mostrar parte do roteiro
-        script = result['script']
-        if len(script) > 100:
-            script = script[:100] + "..."
-        print(f"   • Roteiro: {script}")
+        for reason in suggestion['reasons']:
+            print(f"     - {reason}")
 
 if __name__ == "__main__":
     main() 
