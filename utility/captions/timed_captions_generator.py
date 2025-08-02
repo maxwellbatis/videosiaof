@@ -1,13 +1,19 @@
-import whisper_timestamped as whisper
-from whisper_timestamped import load_model, transcribe_timestamped
+import whisper
 import re
 
-def generate_timed_captions(audio_filename,model_size="base"):
-    WHISPER_MODEL = load_model(model_size)
-   
-    gen = transcribe_timestamped(WHISPER_MODEL, audio_filename, verbose=False, fp16=False)
-   
-    return getCaptionsWithTime(gen)
+def generate_timed_captions(audio_filename, model_size="base"):
+    WHISPER_MODEL = whisper.load_model(model_size)
+    
+    # Forçar português e desabilitar detecção automática
+    result = WHISPER_MODEL.transcribe(
+        audio_filename, 
+        language="pt", 
+        task="transcribe",
+        verbose=False,
+        fp16=False
+    )
+    
+    return getCaptionsWithTime(result)
 
 def splitWordsBySize(words, maxCaptionSize):
    
@@ -29,10 +35,23 @@ def getTimestampMapping(whisper_analysis):
     index = 0
     locationToTimestamp = {}
     for segment in whisper_analysis['segments']:
-        for word in segment['words']:
-            newIndex = index + len(word['text'])+1
-            locationToTimestamp[(index, newIndex)] = word['end']
+        # Para Whisper padrão, usamos o segmento completo
+        text = segment['text']
+        start_time = segment['start']
+        end_time = segment['end']
+        
+        # Dividir o texto em palavras
+        words = text.split()
+        word_duration = (end_time - start_time) / len(words) if words else 0
+        
+        for i, word in enumerate(words):
+            word_start = start_time + (i * word_duration)
+            word_end = start_time + ((i + 1) * word_duration)
+            
+            newIndex = index + len(word) + 1
+            locationToTimestamp[(index, newIndex)] = word_end
             index = newIndex
+    
     return locationToTimestamp
 
 def cleanWord(word):

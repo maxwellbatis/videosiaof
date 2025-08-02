@@ -4,3 +4,15 @@ __pycache__/
 .DS_Store
 setup_env.bat
 setup_env.ps1
+
+# Database
+.env
+node_modules/
+.prisma/
+
+# Generated files
+*.wav
+*.mp4
+audio_tts_*.wav
+rendered_video.mp4
+.env 

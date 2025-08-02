@@ -20,18 +20,49 @@ If you enjoy using Text to Video AI, we'd appreciate your support with a star �
 
 ### Steps to run
 
-Run the following steps
+#### 🚀 Configuração Rápida (Recomendado)
 
-```
-export OPENAI_KEY="api-key"
-export PEXELS_KEY="pexels-key"
+```bash
+# 1. Instalar dependências
+pip install -r requirements.txt
+npm install
 
-pip install -r requirements.text
+# 2. Configurar banco de dados
+python setup_env.py
 
+# 3. Configurar credenciais
+python -m database.setup_database
+
+# 4. Gerar vídeo
 python app.py "Topic name"
 ```
 
+#### 🔧 Configuração Manual (Sem Banco)
+
+```bash
+# 1. Instalar dependências
+pip install -r requirements.txt
+
+# 2. Configurar variáveis de ambiente
+export OPENAI_KEY="api-key"
+export PEXELS_KEY="pexels-key"
+
+# 3. Gerar vídeo sem banco
+python app.py "Topic name" --no-db
+```
+
 Output will be generated in rendered_video.mp4
+
+### 🗄️ Banco de Dados
+
+Este projeto agora inclui integração com banco de dados PostgreSQL para:
+
+- ✅ Histórico completo de vídeos
+- ✅ Armazenamento seguro de credenciais
+- ✅ Rastreamento de status de processamento
+- ✅ Múltiplas credenciais de API
+
+Veja [README_DATABASE.md](README_DATABASE.md) para detalhes completos.
 
 ### Quick Start
 

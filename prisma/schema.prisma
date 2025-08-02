@@ -1,0 +1,48 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ApiCredentials {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  openaiKey String?
+  groqKey   String?
+  pexelsKey String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  videos Video[]
+}
+
+model Video {
+  id          String   @id @default(cuid())
+  title       String
+  topic       String
+  script      String
+  audioPath   String?
+  videoPath   String?
+  status      VideoStatus @default(PENDING)
+  duration    Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  credentialsId String
+  credentials   ApiCredentials @relation(fields: [credentialsId], references: [id])
+
+  @@map("videos")
+}
+
+enum VideoStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+} 

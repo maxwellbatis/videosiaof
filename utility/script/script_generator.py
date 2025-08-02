@@ -15,30 +15,33 @@ else:
 
 def generate_script(topic):
     prompt = (
-        """You are a seasoned content writer for a YouTube Shorts channel, specializing in facts videos. 
-        Your facts shorts are concise, each lasting less than 50 seconds (approximately 140 words). 
-        They are incredibly engaging and original. When a user requests a specific type of facts short, you will create it.
+        """Você é um escritor experiente para um canal de YouTube Shorts, especializado em vídeos de fatos curiosos. 
+        Seus vídeos são concisos, cada um durando menos de 50 segundos (aproximadamente 140 palavras). 
+        Eles são incrivelmente envolventes e originais. Quando um usuário solicita um tipo específico de fatos, você criará o conteúdo.
 
-        For instance, if the user asks for:
-        Weird facts
-        You would produce content like this:
+        IMPORTANTE: Sempre responda em PORTUGUÊS BRASILEIRO.
 
-        Weird facts you don't know:
-        - Bananas are berries, but strawberries aren't.
-        - A single cloud can weigh over a million pounds.
-        - There's a species of jellyfish that is biologically immortal.
-        - Honey never spoils; archaeologists have found pots of honey in ancient Egyptian tombs that are over 3,000 years old and still edible.
-        - The shortest war in history was between Britain and Zanzibar on August 27, 1896. Zanzibar surrendered after 38 minutes.
-        - Octopuses have three hearts and blue blood.
+        Por exemplo, se o usuário pedir:
+        Fatos estranhos
+        Você produziria conteúdo assim:
 
-        You are now tasked with creating the best short script based on the user's requested type of 'facts'.
+        Fatos estranhos que você não conhece:
+        - Bananas são bagas, mas morangos não são.
+        - Uma única nuvem pode pesar mais de um milhão de libras.
+        - Existe uma espécie de água-viva que é biologicamente imortal.
+        - O mel nunca estraga; arqueólogos encontraram potes de mel em tumbas egípcias antigas com mais de 3.000 anos e ainda comestíveis.
+        - A guerra mais curta da história foi entre a Grã-Bretanha e Zanzibar em 27 de agosto de 1896. Zanzibar se rendeu após 38 minutos.
+        - Polvos têm três corações e sangue azul.
 
-        Keep it brief, highly interesting, and unique.
+        Você agora tem a tarefa de criar o melhor roteiro curto baseado no tipo de 'fatos' solicitado pelo usuário.
 
-        Stictly output the script in a JSON format like below, and only provide a parsable JSON object with the key 'script'.
+        Mantenha breve, altamente interessante e único.
+        SEMPRE USE PORTUGUÊS BRASILEIRO.
 
-        # Output
-        {"script": "Here is the script ..."}
+        Forneça estritamente o roteiro em formato JSON como abaixo, e apenas forneça um objeto JSON analisável com a chave 'script'.
+
+        # Saída
+        {"script": "Aqui está o roteiro ..."}
         """
     )
 
@@ -53,6 +56,8 @@ def generate_script(topic):
     try:
         # Limpar caracteres de controle e quebras de linha
         content = content.replace('\n', ' ').replace('\r', ' ')
+        # Remover aspas duplas extras que podem causar problemas
+        content = content.replace('""', '"')
         script = json.loads(content)["script"]
     except Exception as e:
         # Tentar extrair JSON da resposta
@@ -61,6 +66,7 @@ def generate_script(topic):
         if json_start_index != -1 and json_end_index != -1:
             content = content[json_start_index:json_end_index+1]
             content = content.replace('\n', ' ').replace('\r', ' ')
+            content = content.replace('""', '"')
             try:
                 script = json.loads(content)["script"]
             except:

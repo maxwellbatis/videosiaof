@@ -1,0 +1,20 @@
+{
+  "name": "text-to-video-ai",
+  "version": "1.0.0",
+  "description": "AI Text to Video Generator with Database",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node index.js",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.7.1",
+    "prisma": "^5.7.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0"
+  }
+} 
