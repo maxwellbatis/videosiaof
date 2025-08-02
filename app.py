@@ -10,8 +10,15 @@ from utility.captions.timed_captions_generator import generate_timed_captions
 from utility.video.background_video_generator import generate_video_url
 from utility.render.render_engine import get_output_media
 from utility.video.video_search_query_generator import getVideoSearchQueriesTimed, merge_empty_intervals
-from database import VideoDatabase
 import argparse
+
+# Importar banco de dados apenas quando necessário
+try:
+    from database import VideoDatabase
+    DB_AVAILABLE = True
+except Exception as e:
+    print(f"⚠️ Banco de dados não disponível: {e}")
+    DB_AVAILABLE = False
 
 async def generate_video_with_db(topic: str, credentials_name: str = "default", use_db: bool = True):
     """Gera vídeo e salva no banco de dados"""
@@ -19,7 +26,7 @@ async def generate_video_with_db(topic: str, credentials_name: str = "default", 
     db = None
     video_id = None
     
-    if use_db:
+    if use_db and DB_AVAILABLE:
         # Conectar ao banco
         db = VideoDatabase()
         await db.connect()
@@ -129,5 +136,5 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     
-    use_db = not args.no_db
+    use_db = not args.no_db and DB_AVAILABLE
     asyncio.run(generate_video_with_db(args.topic, args.credentials, use_db))
