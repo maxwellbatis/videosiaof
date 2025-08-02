@@ -72,7 +72,7 @@ async def generate_video_with_db(topic: str, credentials_name: str = "default", 
         
         # Gerar áudio
         SAMPLE_FILE_NAME = f"audio_tts_{video_id}.wav" if video_id else "audio_tts.wav"
-        asyncio.run(generate_audio(response, SAMPLE_FILE_NAME))
+        await generate_audio(response, SAMPLE_FILE_NAME)
         
         # Gerar legendas
         timed_captions = generate_timed_captions(SAMPLE_FILE_NAME)
