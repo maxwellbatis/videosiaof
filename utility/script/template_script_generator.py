@@ -162,6 +162,74 @@ class TemplateScriptGenerator:
         
         return " ".join(script_parts)
     
+    def _adjust_pauses_with_real_timestamps(self, pauses_strategy: Dict, audio_file_path: str) -> Dict:
+        """Ajusta as pausas usando timestamps reais do áudio via Whisper"""
+        print(f"🎵 Analisando áudio real para sincronizar pausas...")
+        
+        try:
+            # Usar Whisper para obter timestamps reais
+            from utility.captions.timed_captions_generator import generate_timed_captions
+            
+            # Gerar legendas com timestamps reais
+            timed_captions = generate_timed_captions(audio_file_path)
+            
+            if not timed_captions:
+                print("⚠️ Não foi possível obter timestamps reais, usando estimativas")
+                return self._adjust_pauses_for_duration(pauses_strategy, 45.0)
+            
+            # Calcular duração real baseada no último timestamp
+            real_duration = max(t2 for (t1, t2), text in timed_captions)
+            print(f"📊 Duração real do áudio: {real_duration:.1f}s")
+            
+            # Mapear posições das pausas para timestamps reais
+            adjusted_strategy = {}
+            
+            for pause_type, pauses in pauses_strategy.items():
+                adjusted_pauses = []
+                
+                for pause in pauses:
+                    original_position = pause.get('position', 0)
+                    original_duration = pause.get('duration', 0)
+                    
+                    # Encontrar o timestamp mais próximo da posição original
+                    target_position = (original_position / 45.0) * real_duration
+                    
+                    # Encontrar o segmento de legenda mais próximo
+                    closest_segment = None
+                    min_distance = float('inf')
+                    
+                    for (t1, t2), text in timed_captions:
+                        segment_middle = (t1 + t2) / 2
+                        distance = abs(segment_middle - target_position)
+                        
+                        if distance < min_distance:
+                            min_distance = distance
+                            closest_segment = (t1, t2)
+                    
+                    if closest_segment:
+                        # Usar o final do segmento como posição da pausa
+                        adjusted_position = closest_segment[1]
+                        # Manter a duração proporcional
+                        adjusted_duration = (original_duration / 45.0) * real_duration
+                        
+                        adjusted_pause = pause.copy()
+                        adjusted_pause['position'] = adjusted_position
+                        adjusted_pause['duration'] = adjusted_duration
+                        adjusted_pause['original_position'] = original_position
+                        adjusted_pause['real_segment'] = closest_segment
+                        adjusted_pauses.append(adjusted_pause)
+                        
+                        print(f"   🎯 Pausa ajustada: {original_position:.1f}s → {adjusted_position:.1f}s (segmento: {closest_segment[0]:.1f}s-{closest_segment[1]:.1f}s)")
+                
+                adjusted_strategy[pause_type] = adjusted_pauses
+            
+            return adjusted_strategy
+            
+        except Exception as e:
+            print(f"⚠️ Erro ao analisar áudio real: {e}")
+            print("🔄 Usando estimativas baseadas em duração...")
+            return self._adjust_pauses_for_duration(pauses_strategy, 45.0)
+
     def generate_script_with_pauses(self, topic: str, template_id: str) -> Dict:
         """Gera roteiro com estratégia de pausas aplicada"""
         print(f"🎬 GERANDO ROTEIRO COM PAUSAS: {template_id}")
@@ -178,12 +246,22 @@ class TemplateScriptGenerator:
         pauses_strategy = template.get('pauses_strategy', {}) if template else {}
         
         if pauses_strategy:
-            # Adicionar informações de pausas ao resultado
-            result['pauses_strategy'] = pauses_strategy
-            result['pauses_applied'] = True
+            # Calcular duração estimada baseada no número de palavras
+            script = result.get('script', '')
+            word_count = len(script.split())
+            # Estimativa: ~3 palavras por segundo
+            estimated_duration = word_count / 3.0
             
-            print(f"\n⏱️ ESTRATÉGIA DE PAUSAS APLICADA:")
-            for pause_type, pauses in pauses_strategy.items():
+            # Ajustar pausas para a duração real
+            adjusted_pauses = self._adjust_pauses_for_duration(pauses_strategy, estimated_duration)
+            
+            # Adicionar informações de pausas ao resultado
+            result['pauses_strategy'] = adjusted_pauses
+            result['pauses_applied'] = True
+            result['estimated_duration'] = estimated_duration
+            
+            print(f"\n⏱️ ESTRATÉGIA DE PAUSAS APLICADA (Duração estimada: {estimated_duration:.1f}s):")
+            for pause_type, pauses in adjusted_pauses.items():
                 print(f"   • {pause_type}: {len(pauses)} pausas")
                 for pause in pauses:
                     print(f"     - {pause.get('position', 0):.1f}s ({pause.get('duration', 0):.1f}s): {pause.get('description', '')}")
@@ -191,6 +269,35 @@ class TemplateScriptGenerator:
             print("⚠️ Nenhuma estratégia de pausas encontrada para este template")
         
         return result
+    
+    def _adjust_pauses_for_duration(self, pauses_strategy: Dict, estimated_duration: float) -> Dict:
+        """Ajusta as pausas para a duração real estimada do script (fallback)"""
+        adjusted_strategy = {}
+        
+        for pause_type, pauses in pauses_strategy.items():
+            adjusted_pauses = []
+            for pause in pauses:
+                # Calcular posição ajustada baseada na duração real
+                original_position = pause.get('position', 0)
+                original_duration = pause.get('duration', 0)
+                
+                # Assumir que as pausas originais são baseadas em 45 segundos
+                # Ajustar proporcionalmente para a duração real
+                if estimated_duration > 0:
+                    adjusted_position = (original_position / 45.0) * estimated_duration
+                    adjusted_duration = (original_duration / 45.0) * estimated_duration
+                else:
+                    adjusted_position = original_position
+                    adjusted_duration = original_duration
+                
+                adjusted_pause = pause.copy()
+                adjusted_pause['position'] = adjusted_position
+                adjusted_pause['duration'] = adjusted_duration
+                adjusted_pauses.append(adjusted_pause)
+            
+            adjusted_strategy[pause_type] = adjusted_pauses
+        
+        return adjusted_strategy
     
     def validate_template_assets(self, template_id: str) -> Dict:
         """Valida se todos os assets necessários para o template estão disponíveis"""

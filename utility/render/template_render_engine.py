@@ -38,8 +38,11 @@ class TemplateRenderEngine:
         # Aplicar configurações de áudio
         self._apply_audio_settings(audio_path, audio_settings)
         
-        # Aplicar estratégia de pausas
-        self._apply_pauses_strategy(script, pauses_strategy)
+        # Aplicar estratégia de pausas com timestamps reais
+        if audio_path and os.path.exists(audio_path):
+            self._apply_pauses_strategy_with_real_timestamps(script, pauses_strategy, audio_path)
+        else:
+            self._apply_pauses_strategy(script, pauses_strategy)
         
         # Aplicar efeitos de template
         self._apply_template_effects(video_path, template)
@@ -134,6 +137,83 @@ class TemplateRenderEngine:
         
         # Salvar pausas para uso no render_engine
         self._save_pauses_config(all_pauses)
+    
+    def _apply_pauses_strategy_with_real_timestamps(self, script: str, pauses_strategy: Dict, audio_path: str):
+        """Aplica estratégia de pausas usando timestamps reais do áudio"""
+        print("⏱️ Aplicando estratégia de pausas com timestamps reais...")
+        
+        try:
+            # Usar Whisper para obter timestamps reais
+            from utility.captions.timed_captions_generator import generate_timed_captions
+            
+            # Gerar legendas com timestamps reais
+            timed_captions = generate_timed_captions(audio_path)
+            
+            if not timed_captions:
+                print("⚠️ Não foi possível obter timestamps reais, usando estratégia padrão")
+                self._apply_pauses_strategy(script, pauses_strategy)
+                return
+            
+            # Calcular duração real baseada no último timestamp
+            real_duration = max(t2 for (t1, t2), text in timed_captions)
+            print(f"📊 Duração real do áudio: {real_duration:.1f}s")
+            
+            # Mapear posições das pausas para timestamps reais
+            all_pauses = []
+            
+            for pause_type, pauses in pauses_strategy.items():
+                for pause in pauses:
+                    original_position = pause.get('position', 0)
+                    original_duration = pause.get('duration', 0)
+                    
+                    # Encontrar o timestamp mais próximo da posição original
+                    target_position = (original_position / 45.0) * real_duration
+                    
+                    # Encontrar o segmento de legenda mais próximo
+                    closest_segment = None
+                    min_distance = float('inf')
+                    
+                    for (t1, t2), text in timed_captions:
+                        segment_middle = (t1 + t2) / 2
+                        distance = abs(segment_middle - target_position)
+                        
+                        if distance < min_distance:
+                            min_distance = distance
+                            closest_segment = (t1, t2)
+                    
+                    if closest_segment:
+                        # Usar o final do segmento como posição da pausa
+                        adjusted_position = closest_segment[1]
+                        # Manter a duração proporcional
+                        adjusted_duration = (original_duration / 45.0) * real_duration
+                        
+                        adjusted_pause = {
+                            'position': adjusted_position,
+                            'duration': adjusted_duration,
+                            'purpose': pause.get('purpose', ''),
+                            'description': pause.get('description', ''),
+                            'type': pause_type,
+                            'original_position': original_position,
+                            'real_segment': closest_segment
+                        }
+                        all_pauses.append(adjusted_pause)
+                        
+                        print(f"   🎯 Pausa ajustada: {original_position:.1f}s → {adjusted_position:.1f}s (segmento: {closest_segment[0]:.1f}s-{closest_segment[1]:.1f}s)")
+            
+            # Ordenar pausas por posição
+            all_pauses.sort(key=lambda x: x['position'])
+            
+            print(f"   • Total de pausas ajustadas: {len(all_pauses)}")
+            for pause in all_pauses:
+                print(f"   • {pause['position']:.1f}s ({pause['duration']:.1f}s): {pause['description']}")
+            
+            # Salvar pausas ajustadas para uso no render_engine
+            self._save_pauses_config(all_pauses)
+            
+        except Exception as e:
+            print(f"⚠️ Erro ao aplicar pausas com timestamps reais: {e}")
+            print("🔄 Usando estratégia padrão...")
+            self._apply_pauses_strategy(script, pauses_strategy)
     
     def _apply_template_effects(self, video_path: str, template: Dict):
         """Aplica efeitos específicos do template"""

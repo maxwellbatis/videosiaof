@@ -129,26 +129,26 @@ async def generate_video_async(job_id, topic, template_id=None, use_db=False):
         await generate_audio(response, audio_filename)
         print(f"Áudio gerado: {audio_filename}")
         
-        # 3.5. Aplicar template se especificado
+        # 4. Gerar legendas
+        update_job_progress(job_id, 50)
+        timed_captions = generate_timed_captions(audio_filename)
+        print(f"Legendas geradas: {len(timed_captions)} segmentos")
+        
+        # 4.5. Aplicar template com timestamps reais se especificado
         if template_id:
-            print(f"🎨 APLICANDO TEMPLATE: {template_id}")
+            print(f"🎨 APLICANDO TEMPLATE COM TIMESTAMPS REAIS: {template_id}")
             template = template_manager.get_template(template_id)
             if template:
-                # Aplicar configurações do template
+                # Aplicar configurações do template usando timestamps reais
                 template_render_engine.apply_template_to_video(
                     video_path="",  # Será definido depois
                     template_id=template_id,
                     script=response,  # Script já gerado
                     audio_path=audio_filename  # Áudio já gerado
                 )
-                print(f"✅ Template {template_id} aplicado com sucesso!")
+                print(f"✅ Template {template_id} aplicado com timestamps reais!")
             else:
                 print(f"⚠️ Template {template_id} não encontrado, usando geração padrão")
-        
-        # 4. Gerar legendas
-        update_job_progress(job_id, 50)
-        timed_captions = generate_timed_captions(audio_filename)
-        print(f"Legendas geradas: {len(timed_captions)} segmentos")
         
         # 5. Gerar termos de busca
         update_job_progress(job_id, 60)
