@@ -1,0 +1,171 @@
+{
+  "template": "cinematic_religious",
+  "name": "Cinematográfico Religioso",
+  "description": "Template para conteúdo bíblico/apocalíptico com tom dramático",
+  "version": "1.0",
+  "duration_range": {
+    "min": 45,
+    "max": 60
+  },
+  "sections": {
+    "intro": {
+      "duration": "3-5s",
+      "tone": "dramatic_hook",
+      "visual_style": "dark_mysterious",
+      "narrative_purpose": "Capturar atenção com mistério",
+      "assets": {
+        "audio_effects": [
+          "assets/EFEITOS SONOROS/CINEMATIC/Cinematic_Tension01wav.wav",
+          "assets/EFEITOS SONOROS/CINEMATIC/Cinematic_drones01.wav"
+        ],
+        "video_effects": [
+          "assets/EFEITOS DE VÍDEO/TRANSICÕES_AMOSTRA/OverlayFilm_sfx15.mp4",
+          "assets/EFEITOS DE VÍDEO/TRANSICÕES_AMOSTRA/LightLeak02_sfx18.mp4"
+        ],
+        "background_music": "assets/TRILHA SONORA/CINEMATIC/Cinematic_principal.mp3"
+      },
+      "script_pattern": "Você não vai acreditar no que já estava previsto...",
+      "color_scheme": "dark_red_cyan"
+    },
+    "development": {
+      "duration": "30-40s",
+      "tone": "biblical_narrative",
+      "visual_style": "scripture_highlight",
+      "narrative_purpose": "Desenvolver narrativa bíblica",
+      "assets": {
+        "audio_effects": [
+          "assets/EFEITOS SONOROS/CINEMATIC/Cinematic_Glitch04.wav",
+          "assets/EFEITOS SONOROS/CINEMATIC/Heartbeat.mp3"
+        ],
+        "video_effects": [
+          "assets/EFEITOS DE VÍDEO/TRANSICÕES_AMOSTRA/Overlay_vibrante_sfx16.mp4",
+          "assets/EFEITOS DE VÍDEO/TRANSICÕES_AMOSTRA/OverlayFilm_sfx12.mp4"
+        ],
+        "background_music": "assets/TRILHA SONORA/CINEMATIC/cinematic_suspense01.mp3"
+      },
+      "script_pattern": "Em Apocalipse está escrito...",
+      "color_scheme": "dark_blue_green"
+    },
+    "climax": {
+      "duration": "5-8s",
+      "tone": "apocalyptic_warning",
+      "visual_style": "intense_dramatic",
+      "narrative_purpose": "Momento de impacto máximo",
+      "assets": {
+        "audio_effects": [
+          "assets/EFEITOS SONOROS/CINEMATIC/Cinematic_impact02.wav",
+          "assets/EFEITOS SONOROS/CINEMATIC/Explosion_Debris.wav"
+        ],
+        "video_effects": [
+          "assets/EFEITOS DE VÍDEO/EFEITOS_AMOSTRA/Efeito_fire_particles_sfx01.mp4",
+          "assets/EFEITOS DE VÍDEO/EFEITOS_AMOSTRA/Fire_particles02_sfx.mp4"
+        ],
+        "background_music": "assets/TRILHA SONORA/CINEMATIC/cinematic_suspense_energy.aac"
+      },
+      "script_pattern": "Agora pense comigo...",
+      "color_scheme": "intense_red_orange"
+    },
+    "conclusion": {
+      "duration": "3-5s",
+      "tone": "climactic_question",
+      "visual_style": "dramatic_finale",
+      "narrative_purpose": "Final impactante com pergunta",
+      "assets": {
+        "audio_effects": [
+          "assets/EFEITOS SONOROS/CINEMATIC/Cinematic_reverse02.wav",
+          "assets/EFEITOS SONOROS/CINEMATIC/Cinematic_Tension_coração.wav"
+        ],
+        "video_effects": [
+          "assets/EFEITOS DE VÍDEO/TRANSICÕES_AMOSTRA/Overlay_vibrante_sfx08.mp4",
+          "assets/EFEITOS DE VÍDEO/TRANSICÕES_AMOSTRA/light_pb_sfx02.mp4"
+        ],
+        "background_music": "assets/TRILHA SONORA/CINEMATIC/Cinematic.mp3"
+      },
+      "script_pattern": "Ou será que já estamos vivendo...",
+      "color_scheme": "dark_cyan_yellow"
+    }
+  },
+  "pauses_strategy": {
+    "impact_pauses": [
+      {
+        "position": 3.7,
+        "duration": 1.3,
+        "purpose": "impact_pause",
+        "description": "Pausa dramática após introdução"
+      },
+      {
+        "position": 8.9,
+        "duration": 2.3,
+        "purpose": "dramatic_pause",
+        "description": "Pausa para revelação"
+      },
+      {
+        "position": 45.5,
+        "duration": 1.8,
+        "purpose": "climactic_pause",
+        "description": "Pausa antes da pergunta final"
+      }
+    ],
+    "transition_pauses": [
+      {
+        "position": 13.4,
+        "duration": 0.7,
+        "purpose": "transition",
+        "description": "Transição para citação bíblica"
+      },
+      {
+        "position": 33.2,
+        "duration": 0.9,
+        "purpose": "reflection_pause",
+        "description": "Pausa para reflexão"
+      }
+    ],
+    "reflection_pauses": [
+      {
+        "position": 35.8,
+        "duration": 0.8,
+        "purpose": "personal_connection",
+        "description": "Conexão pessoal"
+      },
+      {
+        "position": 41.2,
+        "duration": 1.0,
+        "purpose": "suspense_build",
+        "description": "Construção de suspense"
+      }
+    ]
+  },
+  "visual_settings": {
+    "color_palette": {
+      "primary": ["Vermelho", "Ciano", "Azul", "Verde", "Amarelo"],
+      "brightness": "dark",
+      "contrast": "high"
+    },
+    "composition": {
+      "type": "horizontal",
+      "aspect_ratio": "16:9",
+      "text_position": "center_bottom"
+    },
+    "text_style": {
+      "font": "Arial-Bold",
+      "fontsize": 90,
+      "stroke_width": 4,
+      "color": "white",
+      "position": "center_bottom",
+      "margin_bottom": 100
+    }
+  },
+  "audio_settings": {
+    "voice": "pt-BR-FranciscoNeural",
+    "rate": 1.0,
+    "volume": 1.0,
+    "background_music_volume": 0.3,
+    "effects_volume": 0.5
+  },
+  "script_generation": {
+    "prompt_template": "Crie um roteiro cinematográfico religioso sobre {topic}. Use tom dramático e apocalíptico. Inclua referências bíblicas e uma pergunta impactante no final. Duração: 45-60 segundos.",
+    "tone": "dramatic_biblical",
+    "language": "pt-BR",
+    "max_words": 150
+  }
+} 

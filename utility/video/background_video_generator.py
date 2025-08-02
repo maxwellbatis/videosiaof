@@ -26,6 +26,12 @@ def search_videos(query_string, orientation_landscape=True):
 
 def getBestVideo(query_string, orientation_landscape=True, used_vids=[]):
     vids = search_videos(query_string, orientation_landscape)
+    
+    # Verificar se a resposta tem vídeos
+    if 'videos' not in vids or not vids['videos']:
+        print(f"Nenhum vídeo encontrado para: {query_string}")
+        return None
+    
     videos = vids['videos']  # Extract the videos list from JSON
 
     # Filter and extract videos with width and height as 1920x1080 for landscape or 1080x1920 for portrait

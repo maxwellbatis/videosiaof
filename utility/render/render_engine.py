@@ -40,15 +40,24 @@ def get_output_media(audio_file_path, timed_captions, background_video_data, vid
     
     visual_clips = []
     for (t1, t2), video_url in background_video_data:
-        # Download the video file
-        video_filename = tempfile.NamedTemporaryFile(delete=False).name
-        download_file(video_url, video_filename)
-        
-        # Create VideoFileClip from the downloaded file
-        video_clip = VideoFileClip(video_filename)
-        video_clip = video_clip.set_start(t1)
-        video_clip = video_clip.set_end(t2)
-        visual_clips.append(video_clip)
+        # Verificar se a URL é válida
+        if video_url is None or video_url == "None":
+            print(f"⚠️ URL inválida para intervalo {t1}-{t2}, pulando...")
+            continue
+            
+        try:
+            # Download the video file
+            video_filename = tempfile.NamedTemporaryFile(delete=False).name
+            download_file(video_url, video_filename)
+            
+            # Create VideoFileClip from the downloaded file
+            video_clip = VideoFileClip(video_filename)
+            video_clip = video_clip.set_start(t1)
+            video_clip = video_clip.set_end(t2)
+            visual_clips.append(video_clip)
+        except Exception as e:
+            print(f"❌ Erro ao processar vídeo {video_url}: {e}")
+            continue
     
     audio_clips = []
     audio_file_clip = AudioFileClip(audio_file_path)
@@ -81,7 +90,11 @@ def get_output_media(audio_file_path, timed_captions, background_video_data, vid
     
     # Clean up downloaded files
     for (t1, t2), video_url in background_video_data:
-        video_filename = tempfile.NamedTemporaryFile(delete=False).name
-        os.remove(video_filename)
+        if video_url and video_url != "None":
+            try:
+                video_filename = tempfile.NamedTemporaryFile(delete=False).name
+                os.remove(video_filename)
+            except:
+                pass
 
     return OUTPUT_FILE_NAME

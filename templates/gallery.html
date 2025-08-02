@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Galeria de Vídeos - Text-to-Video AI</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            color: white;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        .btn {
+            background: #28a745;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn:hover {
+            background: #218838;
+        }
+        .btn-primary {
+            background: #007bff;
+        }
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+        .video-card {
+            background: rgba(255,255,255,0.2);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            backdrop-filter: blur(10px);
+        }
+        .video-thumbnail {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        .video-thumbnail:hover {
+            transform: scale(1.05);
+        }
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+            display: inline-block;
+        }
+        .status-completed { background: #d4edda; color: #155724; }
+        .status-processing { background: #cce5ff; color: #004085; }
+        .status-failed { background: #f8d7da; color: #721c24; }
+        .empty-state {
+            text-align: center;
+            padding: 50px;
+            color: rgba(255,255,255,0.8);
+        }
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        /* Modal para visualização de vídeo */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+        }
+        .modal-content {
+            background: rgba(255,255,255,0.95);
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 15px;
+            width: 80%;
+            max-width: 800px;
+            position: relative;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover {
+            color: #000;
+        }
+        .video-player {
+            width: 100%;
+            max-height: 70vh;
+            border-radius: 10px;
+        }
+        .modal-title {
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        /* Grid layout para vídeos */
+        .videos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📁 Galeria de Vídeos</h1>
+        <p>Visualize e baixe todos os vídeos gerados</p>
+        
+        <div style="margin-bottom: 30px;">
+            <a href="/" class="btn">🏠 Início</a>
+            <a href="/gallery" class="btn btn-primary">📁 Galeria</a>
+            <a href="/api/jobs" class="btn" target="_blank">🔧 API</a>
+            <button onclick="refreshGallery()" class="btn">🔄 Atualizar</button>
+        </div>
+
+        <div id="videosContainer">
+            <div class="empty-state">
+                <div>📹</div>
+                <h3>Nenhum vídeo gerado ainda</h3>
+                <p>Crie seu primeiro vídeo na página inicial</p>
+                <a href="/" class="btn">🚀 Criar Vídeo</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para visualização de vídeo -->
+    <div id="videoModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeVideoModal()">&times;</span>
+            <h2 class="modal-title" id="modalTitle">Visualizar Vídeo</h2>
+            <video id="videoPlayer" class="video-player" controls>
+                Seu navegador não suporta o elemento de vídeo.
+            </video>
+        </div>
+    </div>
+
+    <script>
+        // Load videos on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadVideos();
+        });
+
+        async function loadVideos() {
+            try {
+                const response = await fetch('/api/jobs');
+                const data = await response.json();
+                
+                const container = document.getElementById('videosContainer');
+                
+                if (data.jobs && data.jobs.length > 0) {
+                    const completedVideos = data.jobs.filter(job => job.status === 'COMPLETED');
+                    
+                    if (completedVideos.length === 0) {
+                        container.innerHTML = `
+                            <div class="empty-state">
+                                <div>📹</div>
+                                <h3>Nenhum vídeo gerado ainda</h3>
+                                <p>Crie seu primeiro vídeo na página inicial</p>
+                                <a href="/" class="btn">🚀 Criar Vídeo</a>
+                            </div>
+                        `;
+                    } else {
+                        const videosHtml = completedVideos.map(video => createVideoCard(video)).join('');
+                        container.innerHTML = `<div class="videos-grid">${videosHtml}</div>`;
+                    }
+                } else {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div>📹</div>
+                            <h3>Nenhum vídeo gerado ainda</h3>
+                            <p>Crie seu primeiro vídeo na página inicial</p>
+                            <a href="/" class="btn">🚀 Criar Vídeo</a>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Erro ao carregar vídeos:', error);
+                document.getElementById('videosContainer').innerHTML = `
+                    <div class="empty-state">
+                        <div>⚠️</div>
+                        <h3>Erro ao carregar vídeos</h3>
+                        <p>Tente novamente mais tarde</p>
+                        <button onclick="loadVideos()" class="btn">🔄 Tentar Novamente</button>
+                    </div>
+                `;
+            }
+        }
+
+        function createVideoCard(video) {
+            const createdDate = new Date(video.created_at).toLocaleDateString('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            return `
+                <div class="video-card">
+                    <div class="video-thumbnail" onclick="openVideoModal('${video.id}', '${video.topic}')">
+                        🎬
+                    </div>
+                    <div>
+                        <h3>${video.topic}</h3>
+                        <div style="margin: 15px 0;">
+                            <span class="status-badge status-${video.status.toLowerCase()}">
+                                ✅ Concluído
+                            </span>
+                        </div>
+                        <div style="margin: 15px 0; font-size: 14px; opacity: 0.8;">
+                            <div>📅 Criado em: ${createdDate}</div>
+                            <div>⏱️ Duração: ${video.duration || '~47'}s</div>
+                        </div>
+                        <div style="margin-top: 20px;">
+                            <a href="/api/videos/${video.id}" class="btn">⬇️ Baixar Vídeo</a>
+                            <button onclick="openVideoModal('${video.id}', '${video.topic}')" class="btn btn-primary">👁️ Visualizar</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function openVideoModal(videoId, title) {
+            const modal = document.getElementById('videoModal');
+            const videoPlayer = document.getElementById('videoPlayer');
+            const modalTitle = document.getElementById('modalTitle');
+            
+            modalTitle.textContent = title;
+            videoPlayer.src = `/api/videos/${videoId}`;
+            modal.style.display = 'block';
+            
+            // Focar no vídeo
+            videoPlayer.focus();
+        }
+
+        function closeVideoModal() {
+            const modal = document.getElementById('videoModal');
+            const videoPlayer = document.getElementById('videoPlayer');
+            
+            videoPlayer.pause();
+            videoPlayer.src = '';
+            modal.style.display = 'none';
+        }
+
+        // Fechar modal ao clicar fora
+        window.onclick = function(event) {
+            const modal = document.getElementById('videoModal');
+            if (event.target === modal) {
+                closeVideoModal();
+            }
+        }
+
+        function refreshGallery() {
+            const button = event.target;
+            const originalText = button.innerHTML;
+            
+            button.innerHTML = '🔄 Atualizando...';
+            button.disabled = true;
+            
+            loadVideos().finally(() => {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            });
+        }
+
+        // Auto-refresh every 30 seconds
+        setInterval(loadVideos, 30000);
+    </script>
+</body>
+</html> 
